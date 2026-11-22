@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ask with web search</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 40px auto; padding: 0 16px; color: #222; }
+    form { display: flex; gap: 8px; }
+    input { flex: 1; padding: 10px; font-size: 15px; border: 1px solid #bbb; border-radius: 6px; }
+    button { padding: 10px 16px; font-size: 15px; border: 0; border-radius: 6px; background: #534AB7; color: #fff; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: default; }
+    #progress { margin-top: 16px; color: #666; font-size: 13px; }
+    #progress div { margin: 2px 0; }
+    #answer { margin-top: 16px; white-space: pre-wrap; line-height: 1.6; }
+    .error { color: #A32D2D; }
+  </style>
+</head>
+<body>
+  <h1>Ask with web search</h1>
+  <form id="f">
+    <label for="q" class="visually-hidden" style="position:absolute;left:-9999px">Question</label>
+    <input id="q" name="q" placeholder="What is the score in today's India vs New Zealand match?" required minlength="3">
+    <button id="go">Ask</button>
+  </form>
+  <div id="progress" aria-live="polite"></div>
+  <div id="answer" aria-live="polite"></div>
+
+  <script>
+    const f = document.getElementById('f'), q = document.getElementById('q'), go = document.getElementById('go');
+    const progress = document.getElementById('progress'), answer = document.getElementById('answer');
+
+    f.addEventListener('submit', (e) => {
+      e.preventDefault();
+      progress.textContent = ''; answer.textContent = ''; answer.className = ''; go.disabled = true;
+      const es = new EventSource('/api/ask/stream?question=' + encodeURIComponent(q.value));
+      const line = (t) => { const d = document.createElement('div'); d.textContent = '• ' + t; progress.appendChild(d); };
+      es.addEventListener('progress', (ev) => line(JSON.parse(ev.data).message));
+      es.addEventListener('answer', (ev) => {
+        const d = JSON.parse(ev.data);
+        answer.textContent = d.answer + (d.cost_usd != null ? `\n\n(cost: $${d.cost_usd.toFixed(4)})` : '');
+        es.close(); go.disabled = false;
+      });
+      es.addEventListener('error', (ev) => {
+        if (ev.data) { answer.textContent = JSON.parse(ev.data).message; }
+        else if (!answer.textContent) { answer.textContent = 'Connection lost.'; }
+        answer.className = 'error'; es.close(); go.disabled = false;
+      });
+    });
+  </script>
+</body>
+</html>

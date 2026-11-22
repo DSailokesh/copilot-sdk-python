@@ -1,0 +1,8 @@
+# Pin exact versions after your first successful install (pip freeze).
+fastapi>=0.115
+uvicorn[standard]>=0.30
+gunicorn>=22.0
+pydantic>=2.7
+python-dotenv>=1.0
+tzdata  # zoneinfo timezone data on Windows
+claude-agent-sdk>=0.2   # bundles the Claude Code CLI; no Node.js needed
